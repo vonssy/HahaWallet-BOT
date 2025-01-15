@@ -9,7 +9,7 @@ HAHA Wallet BOT
 ## Features
 
   - Auto Get Account Information
-  - Auto Claim Daily Karma Points
+  - Auto Claim Daily Karma Points [UTC+7]
   - Multi Accounts
 
 ## Requiremnets
