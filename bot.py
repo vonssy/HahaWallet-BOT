@@ -216,9 +216,18 @@ class HahaWallet:
             claim = await self.claim_checkin(token)
             
             if claim:
+
+                balance = "N/A"
+                user = await self.user_balance(token)
+                if user:
+                    balance = user["getKarmaPoints"]
+
                 self.log(
                     f"{Fore.CYAN+Style.BRIGHT}Check-In:{Style.RESET_ALL}"
                     f"{Fore.GREEN+Style.BRIGHT} Is Claimed {Style.RESET_ALL}"
+                    f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                    f"{Fore.CYAN+Style.BRIGHT} Balance {Style.RESET_ALL}"
+                    f"{Fore.WHITE+Style.BRIGHT}{balance} Karma{Style.RESET_ALL}"
                 )
             else:
                 self.log(
@@ -248,17 +257,18 @@ class HahaWallet:
         
                 separator = "=" * 10
                 for account in accounts:
-                    email = account.get('Email')
-                    password = account.get('Password')
+                    if account:
+                        email = account.get('Email')
+                        password = account.get('Password')
 
-                    if "@" in email and password:
-                        self.log(
-                            f"{Fore.CYAN + Style.BRIGHT}{separator}[{Style.RESET_ALL}"
-                            f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(email)} {Style.RESET_ALL}"
-                            f"{Fore.CYAN + Style.BRIGHT}]{separator}{Style.RESET_ALL}"
-                        )
-                        await self.process_accounts(email, password)
-                        await asyncio.sleep(3)
+                        if "@" in email and password:
+                            self.log(
+                                f"{Fore.CYAN + Style.BRIGHT}{separator}[{Style.RESET_ALL}"
+                                f"{Fore.WHITE + Style.BRIGHT} {self.mask_account(email)} {Style.RESET_ALL}"
+                                f"{Fore.CYAN + Style.BRIGHT}]{separator}{Style.RESET_ALL}"
+                            )
+                            await self.process_accounts(email, password)
+                            await asyncio.sleep(3)
 
                 self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*43)
                 seconds = 12 * 60 * 60
