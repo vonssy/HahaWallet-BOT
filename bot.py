@@ -255,7 +255,7 @@ class HahaWallet:
                     f"{Fore.WHITE + Style.BRIGHT}{len(accounts)}{Style.RESET_ALL}"
                 )
         
-                separator = "=" * 10
+                separator = "=" * 15
                 for account in accounts:
                     if account:
                         email = account.get('Email')
@@ -270,7 +270,7 @@ class HahaWallet:
                             await self.process_accounts(email, password)
                             await asyncio.sleep(3)
 
-                self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*43)
+                self.log(f"{Fore.CYAN + Style.BRIGHT}={Style.RESET_ALL}"*53)
                 seconds = 12 * 60 * 60
                 while seconds > 0:
                     formatted_time = self.format_seconds(seconds)
