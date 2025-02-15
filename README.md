@@ -2,14 +2,16 @@
 HAHA Wallet BOT
 
 - Register Here : [HAHA Wallet](https://join.haha.me/REYVALDI-QURTBV)
-- Download Extension
-- Register With Email
-- Save Seed Phrase
+- Use Code      : REYVALDI-QURTBV
 
 ## Features
 
   - Auto Get Account Information
-  - Auto Claim Daily Karma Points [UTC+7]
+  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - Choose 1
+  - Auto Run With Private Proxy - Choose 2
+  - Auto Run Without Proxy - Choose 3
+  - Auto Claim Daily Karma Points
+  - Auto Complete Available Tasks
   - Multi Accounts
 
 ## Requiremnets
@@ -45,6 +47,13 @@ HAHA Wallet BOT
             "Password": "Your Password 2"
         }
     ]
+  ```
+
+  - **proxy.txt:** You will find the file `proxy.txt` inside the project directory. Make sure `proxy.txt` contains data that matches the format expected by the script. Here are examples of file formats:
+  ```bash
+    ip:port # Default Protcol HTTP.
+    protocol://ip:port
+    protocol://user:pass@ip:port
   ```
 
 ## Run
