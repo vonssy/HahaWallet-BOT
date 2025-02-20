@@ -302,7 +302,6 @@ class HahaWallet:
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.post(url=url, headers=headers, data=data) as response:
-                        self.log(await response.text())
                         response.raise_for_status()
                         result = await response.json()
                         return result['data']['setOnboarding']
@@ -360,7 +359,6 @@ class HahaWallet:
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
                     async with session.post(url=url, headers=headers, data=data) as response:
-                        self.log(await response.text())
                         response.raise_for_status()
                         result = await response.json()
                         return result['data']['claimQuestEx']
@@ -458,8 +456,9 @@ class HahaWallet:
                     title = task['name']
                     reward = task['karma_available']
                     is_completed = task['completed']
+                    is_paid = task['karma_paid']
 
-                    if is_completed:
+                    if is_completed and is_paid:
                         self.log(
                             f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
                             f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
@@ -509,7 +508,7 @@ class HahaWallet:
                         )
                         continue
 
-                    claim = await self.claim_basic_tasks(token, task_name, proxy)
+                    claim = await self.claim_social_tasks(token, task_name, proxy)
                     if claim:
                         self.log(
                             f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
