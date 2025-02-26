@@ -457,6 +457,7 @@ class HahaWallet:
                     reward = task['karma_available']
                     is_completed = task['completed']
                     is_paid = task['karma_paid']
+                    today_tx = task['today_transactions']
 
                     if is_completed and is_paid:
                         self.log(
@@ -466,22 +467,52 @@ class HahaWallet:
                         )
                         continue
 
-                    claim = await self.claim_basic_tasks(token, task_id, proxy)
-                    if claim:
-                        self.log(
-                            f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
-                            f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
-                            f"{Fore.GREEN+Style.BRIGHT} IS Completed {Style.RESET_ALL}"
-                            f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
-                            f"{Fore.CYAN+Style.BRIGHT} Reward {Style.RESET_ALL}"
-                            f"{Fore.WHITE+Style.BRIGHT} {reward} Karma {Style.RESET_ALL}"
-                        )
+                    if task_id == 14:
+                        count = 10
+                        if today_tx is None:
+                            today_tx = 0
+                            count = 10 - today_tx
+                        else:
+                            count = 10 - today_tx
+
+                        for _ in range(count):
+                            claim = await self.claim_basic_tasks(token, task_id, proxy)
+                            if claim:
+                                self.log(
+                                    f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
+                                    f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
+                                    f"{Fore.GREEN+Style.BRIGHT} IS Completed {Style.RESET_ALL}"
+                                    f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                                    f"{Fore.CYAN+Style.BRIGHT} Reward {Style.RESET_ALL}"
+                                    f"{Fore.WHITE+Style.BRIGHT}{reward} Karma{Style.RESET_ALL}"
+                                )
+                            else:
+                                self.log(
+                                    f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
+                                    f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
+                                    f"{Fore.RED+Style.BRIGHT} Not Completed {Style.RESET_ALL}"
+                                )
+                                break
+
+                            await asyncio.sleep(1)
+
                     else:
-                        self.log(
-                            f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
-                            f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
-                            f"{Fore.RED+Style.BRIGHT} Not Completed {Style.RESET_ALL}"
-                        )
+                        claim = await self.claim_basic_tasks(token, task_id, proxy)
+                        if claim:
+                            self.log(
+                                f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
+                                f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
+                                f"{Fore.GREEN+Style.BRIGHT} IS Completed {Style.RESET_ALL}"
+                                f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                                f"{Fore.CYAN+Style.BRIGHT} Reward {Style.RESET_ALL}"
+                                f"{Fore.WHITE+Style.BRIGHT}{reward} Karma{Style.RESET_ALL}"
+                            )
+                        else:
+                            self.log(
+                                f"{Fore.CYAN+Style.BRIGHT}      > {Style.RESET_ALL}"
+                                f"{Fore.WHITE+Style.BRIGHT}{title}{Style.RESET_ALL}"
+                                f"{Fore.RED+Style.BRIGHT} Not Completed {Style.RESET_ALL}"
+                            )
                     await asyncio.sleep(1)
         else:
             self.log(
@@ -516,7 +547,7 @@ class HahaWallet:
                             f"{Fore.GREEN+Style.BRIGHT} IS Completed {Style.RESET_ALL}"
                             f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
                             f"{Fore.CYAN+Style.BRIGHT} Reward {Style.RESET_ALL}"
-                            f"{Fore.WHITE+Style.BRIGHT} {reward} Karma {Style.RESET_ALL}"
+                            f"{Fore.WHITE+Style.BRIGHT}{reward} Karma{Style.RESET_ALL}"
                         )
                     else:
                         self.log(
