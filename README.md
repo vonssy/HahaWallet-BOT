@@ -2,14 +2,15 @@
 HAHA Wallet BOT
 
 - Register Here : [HAHA Wallet](https://join.haha.me/REYVALDI-QURTBV)
-- Use Code      : REYVALDI-QURTBV
+- Use Code `REYVALDI-QURTBV`
 
 ## Features
 
   - Auto Get Account Information
-  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - Choose 1
-  - Auto Run With Private Proxy - Choose 2
-  - Auto Run Without Proxy - Choose 3
+  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - `Choose 1`
+  - Auto Run With Private Proxy - `Choose 2`
+  - Auto Run Without Proxy - `Choose 3`
+  - Auto Rotate Invalid Proxies - `y` or `n`
   - Auto Claim Daily Karma Points
   - Auto Complete Available Tasks
   - Multi Accounts
@@ -36,7 +37,7 @@ HAHA Wallet BOT
 ## Configuration
 
 - **accounts.json:** You will find the file `accounts.json` inside the project directory. Make sure `accounts.json` contains data that matches the format expected by the script. Here are examples of file formats:
-  ```bash
+  ```json
     [
         {
             "Email": "Your Email Address 1",
