@@ -168,7 +168,6 @@ class HahaWallet:
         headers = {
             **self.headers,
             "Content-Length": str(len(data)),
-            "Content-Type": "application/json",
             "Content-Type": "application/json"
         }
         connector = ProxyConnector.from_url(proxy) if proxy else None
