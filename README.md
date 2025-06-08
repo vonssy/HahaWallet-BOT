@@ -7,7 +7,7 @@ HAHA Wallet BOT
 ## Features
 
   - Auto Get Account Information
-  - Auto Run With [Monosans](https://raw.githubusercontent.com/monosans/proxy-list/main/proxies/all.txt) Proxy - `Choose 1`
+  - Auto Run With [Proxyscrape Free Proxy](https://proxyscrape.com/free-proxy-list) - `Choose 1`
   - Auto Run With Private Proxy - `Choose 2`
   - Auto Run Without Proxy - `Choose 3`
   - Auto Rotate Invalid Proxies - `y` or `n`
@@ -40,12 +40,12 @@ HAHA Wallet BOT
   ```json
     [
         {
-            "Email": "Your Email Address 1",
-            "Password": "Your Password 1"
+            "Email": "your_email_address_1",
+            "Password": "your_password_1"
         },
         {
-            "Email": "Your Email Address 2",
-            "Password": "Your Password 2"
+            "Email": "your_email_address_2",
+            "Password": "your_password_2"
         }
     ]
   ```

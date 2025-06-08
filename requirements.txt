@@ -1,5 +1,5 @@
-aiohttp
-aiohttp-socks
-fake-useragent
-colorama
-pytz
+aiohttp==3.11.10
+aiohttp-socks==0.9.1
+fake-useragent==1.5.1
+colorama==0.4.6
+pytz==2024.1
