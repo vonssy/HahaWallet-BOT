@@ -338,7 +338,6 @@ class HahaWallet:
             },
             "query": "mutation ($task_id: Int) {\n  setOnboarding(task_id: $task_id) {\n    task_id\n    success\n    completed_all\n    current_karma\n    __typename\n  }\n}"
         })
-        
         headers = {
             **self.headers,
             "Authorization": self.id_tokens[email],
@@ -409,7 +408,6 @@ class HahaWallet:
             },
             "query": "mutation claimQuestEx($questName: String!) {\n  claimQuestEx(questName: $questName) {\n    success\n    message\n    __typename\n  }\n}"
         })
-        
         headers = {
             **self.headers,
             "Authorization": self.id_tokens[email],
