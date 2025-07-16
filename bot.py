@@ -1,13 +1,14 @@
 from aiohttp import (
     ClientResponseError,
     ClientSession,
-    ClientTimeout
+    ClientTimeout,
+    BasicAuth
 )
 from aiohttp_socks import ProxyConnector
 from fake_useragent import FakeUserAgent
 from datetime import datetime
 from colorama import *
-import asyncio, json, os, pytz
+import asyncio, json, re, os, pytz
 
 wib = pytz.timezone('Asia/Jakarta')
 
@@ -44,7 +45,7 @@ class HahaWallet:
     def welcome(self):
         print(
             f"""
-        {Fore.GREEN + Style.BRIGHT}Auto Claim Karma {Fore.BLUE + Style.BRIGHT}Haha Wallet - BOT
+        {Fore.GREEN + Style.BRIGHT}Haha Wallet {Fore.BLUE + Style.BRIGHT}Auto BOT
             """
             f"""
         {Fore.GREEN + Style.BRIGHT}Rey? {Fore.YELLOW + Style.BRIGHT}<INI WATERMARK>
@@ -57,25 +58,26 @@ class HahaWallet:
         return f"{int(hours):02}:{int(minutes):02}:{int(seconds):02}"
     
     def load_accounts(self):
+        filename = "accounts.json"
         try:
-            if not os.path.exists('accounts.json'):
-                self.log(f"{Fore.RED}File 'accounts.json' tidak ditemukan.{Style.RESET_ALL}")
+            if not os.path.exists(filename):
+                self.log(f"{Fore.RED}File {filename} Not Found.{Style.RESET_ALL}")
                 return
 
-            with open('accounts.json', 'r') as file:
+            with open(filename, 'r') as file:
                 data = json.load(file)
                 if isinstance(data, list):
                     return data
                 return []
         except json.JSONDecodeError:
             return []
-        
+    
     async def load_proxies(self, use_proxy_choice: int):
         filename = "proxy.txt"
         try:
             if use_proxy_choice == 1:
                 async with ClientSession(timeout=ClientTimeout(total=30)) as session:
-                    async with session.get("https://api.proxyscrape.com/v4/free-proxy-list/get?request=display_proxies&proxy_format=protocolipport&format=text") as response:
+                    async with session.get("https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt") as response:
                         response.raise_for_status()
                         content = await response.text()
                         with open(filename, 'w') as f:
@@ -124,6 +126,26 @@ class HahaWallet:
         self.proxy_index = (self.proxy_index + 1) % len(self.proxies)
         return proxy
     
+    def build_proxy_config(self, proxy=None):
+        if not proxy:
+            return None, None, None
+
+        if proxy.startswith("socks"):
+            connector = ProxyConnector.from_url(proxy)
+            return connector, None, None
+
+        elif proxy.startswith("http"):
+            match = re.match(r"http://(.*?):(.*?)@(.*)", proxy)
+            if match:
+                username, password, host_port = match.groups()
+                clean_url = f"http://{host_port}"
+                auth = BasicAuth(username, password)
+                return None, clean_url, auth
+            else:
+                return None, proxy, None
+
+        raise Exception("Unsupported Proxy Type.")
+    
     def mask_account(self, account):
         if "@" in account:
             local, domain = account.split('@', 1)
@@ -164,7 +186,24 @@ class HahaWallet:
 
         return choose, rotate
     
-    async def users_login(self, email: str, proxy=None, retries=5):
+    async def check_connection(self, proxy_url=None):
+        connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
+        try:
+            async with ClientSession(connector=connector, timeout=ClientTimeout(total=30)) as session:
+                async with session.get(url="https://api.ipify.org?format=json", proxy=proxy, proxy_auth=proxy_auth) as response:
+                    response.raise_for_status()
+                    return True
+        except (Exception, ClientResponseError) as e:
+            self.log(
+                f"{Fore.CYAN+Style.BRIGHT}Status    :{Style.RESET_ALL}"
+                f"{Fore.RED+Style.BRIGHT} Connection Not 200 OK {Style.RESET_ALL}"
+                f"{Fore.MAGENTA+Style.BRIGHT}-{Style.RESET_ALL}"
+                f"{Fore.YELLOW+Style.BRIGHT} {str(e)} {Style.RESET_ALL}"
+            )
+        
+        return None
+    
+    async def users_login(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/users/login"
         data = json.dumps({"email":email, "password":self.password[email]})
         headers = {
@@ -173,10 +212,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -192,7 +231,7 @@ class HahaWallet:
 
         return None
                 
-    async def user_balance(self, email: str, proxy=None, retries=5):
+    async def user_balance(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -206,10 +245,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -225,7 +264,7 @@ class HahaWallet:
 
         return None
                 
-    async def daily_checkin(self, email: str, proxy=None, retries=5):
+    async def daily_checkin(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -241,10 +280,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -260,7 +299,7 @@ class HahaWallet:
 
         return None
                 
-    async def claim_checkin(self, email: str, proxy=None, retries=5):
+    async def claim_checkin(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -276,10 +315,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -295,7 +334,7 @@ class HahaWallet:
 
         return None
             
-    async def basic_task_lists(self, email: str, proxy=None, retries=5):
+    async def basic_task_lists(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -309,10 +348,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -329,7 +368,7 @@ class HahaWallet:
 
         return None
                 
-    async def claim_basic_tasks(self, email: str, task_id: int, title: str, proxy=None, retries=5):
+    async def claim_basic_tasks(self, email: str, task_id: int, title: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -345,10 +384,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -365,7 +404,7 @@ class HahaWallet:
 
         return None
             
-    async def social_task_lists(self, email: str, proxy=None, retries=5):
+    async def social_task_lists(self, email: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": None,
@@ -379,10 +418,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -399,7 +438,7 @@ class HahaWallet:
 
         return None
                 
-    async def claim_social_tasks(self, email: str, task_name: str, title: str, proxy=None, retries=5):
+    async def claim_social_tasks(self, email: str, task_name: str, title: str, proxy_url=None, retries=5):
         url = f"{self.BASE_API}/wallet-api/graphql"
         data = json.dumps({
             "operationName": "claimQuestEx",
@@ -415,10 +454,10 @@ class HahaWallet:
             "Content-Type": "application/json"
         }
         for attempt in range(retries):
-            connector = ProxyConnector.from_url(proxy) if proxy else None
+            connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
             try:
                 async with ClientSession(connector=connector, timeout=ClientTimeout(total=60)) as session:
-                    async with session.post(url=url, headers=headers, data=data, ssl=False) as response:
+                    async with session.post(url=url, headers=headers, data=data, proxy=proxy, proxy_auth=proxy_auth) as response:
                         response.raise_for_status()
                         return await response.json()
             except (Exception, ClientResponseError) as e:
@@ -434,14 +473,28 @@ class HahaWallet:
                 )
 
         return None
-        
-    async def process_users_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
+    
+    async def process_check_connection(self, email: str, use_proxy: bool, rotate_proxy: bool):
         while True:
             proxy = self.get_next_proxy_for_account(email) if use_proxy else None
             self.log(
                 f"{Fore.CYAN+Style.BRIGHT}Proxy     :{Style.RESET_ALL}"
                 f"{Fore.WHITE+Style.BRIGHT} {proxy} {Style.RESET_ALL}"
             )
+
+            is_valid = await self.check_connection(proxy)
+            if not is_valid:
+                if rotate_proxy:
+                    proxy = self.rotate_proxy_for_account(email)
+
+                continue
+
+            return True
+        
+    async def process_users_login(self, email: str, use_proxy: bool, rotate_proxy: bool):
+        is_valid = await self.process_check_connection(email, use_proxy, rotate_proxy)
+        if is_valid:
+            proxy = self.get_next_proxy_for_account(email) if use_proxy else None
 
             login = await self.users_login(email, proxy)
             if login:
@@ -452,11 +505,6 @@ class HahaWallet:
                     f"{Fore.GREEN+Style.BRIGHT} Login Success {Style.RESET_ALL}"
                 )
                 return True
-            
-            if rotate_proxy:
-                proxy = self.rotate_proxy_for_account(email)
-                await asyncio.sleep(5)
-                continue
 
             return False
         
