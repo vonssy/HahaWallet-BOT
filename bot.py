@@ -14,18 +14,8 @@ wib = pytz.timezone('Asia/Jakarta')
 
 class HahaWallet:
     def __init__(self) -> None:
-        self.headers = {
-            "Accept": "application/json, text/plain, */*",
-            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
-            "Origin": "chrome-extension://andhndehpcjpmneneealacgnmealilal",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "none",
-            "Sec-Fetch-Storage-Access": "active",
-            "User-Agent": FakeUserAgent().random,
-            "X-Request-Source-Extra": "chrome"
-        }
         self.BASE_API = "https://prod.haha.me"
+        self.HEADERS = {}
         self.proxies = []
         self.proxy_index = 0
         self.account_proxies = {}
@@ -72,23 +62,14 @@ class HahaWallet:
         except json.JSONDecodeError:
             return []
     
-    async def load_proxies(self, use_proxy_choice: int):
+    async def load_proxies(self):
         filename = "proxy.txt"
         try:
-            if use_proxy_choice == 1:
-                async with ClientSession(timeout=ClientTimeout(total=30)) as session:
-                    async with session.get("https://raw.githubusercontent.com/monosans/proxy-list/refs/heads/main/proxies/all.txt") as response:
-                        response.raise_for_status()
-                        content = await response.text()
-                        with open(filename, 'w') as f:
-                            f.write(content)
-                        self.proxies = [line.strip() for line in content.splitlines() if line.strip()]
-            else:
-                if not os.path.exists(filename):
-                    self.log(f"{Fore.RED + Style.BRIGHT}File {filename} Not Found.{Style.RESET_ALL}")
-                    return
-                with open(filename, 'r') as f:
-                    self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
+            if not os.path.exists(filename):
+                self.log(f"{Fore.RED + Style.BRIGHT}File {filename} Not Found.{Style.RESET_ALL}")
+                return
+            with open(filename, 'r') as f:
+                self.proxies = [line.strip() for line in f.read().splitlines() if line.strip()]
             
             if not self.proxies:
                 self.log(f"{Fore.RED + Style.BRIGHT}No Proxies Found.{Style.RESET_ALL}")
@@ -155,36 +136,34 @@ class HahaWallet:
     def print_question(self):
         while True:
             try:
-                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Proxyscrape Free Proxy{Style.RESET_ALL}")
-                print(f"{Fore.WHITE + Style.BRIGHT}2. Run With Private Proxy{Style.RESET_ALL}")
-                print(f"{Fore.WHITE + Style.BRIGHT}3. Run Without Proxy{Style.RESET_ALL}")
-                choose = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2/3] -> {Style.RESET_ALL}").strip())
+                print(f"{Fore.WHITE + Style.BRIGHT}1. Run With Proxy{Style.RESET_ALL}")
+                print(f"{Fore.WHITE + Style.BRIGHT}2. Run Without Proxy{Style.RESET_ALL}")
+                proxy_choice = int(input(f"{Fore.BLUE + Style.BRIGHT}Choose [1/2] -> {Style.RESET_ALL}").strip())
 
-                if choose in [1, 2, 3]:
+                if proxy_choice in [1, 2]:
                     proxy_type = (
-                        "With Proxyscrape Free" if choose == 1 else 
-                        "With Private" if choose == 2 else 
+                        "With" if proxy_choice == 1 else 
                         "Without"
                     )
                     print(f"{Fore.GREEN + Style.BRIGHT}Run {proxy_type} Proxy Selected.{Style.RESET_ALL}")
                     break
                 else:
-                    print(f"{Fore.RED + Style.BRIGHT}Please enter either 1, 2 or 3.{Style.RESET_ALL}")
+                    print(f"{Fore.RED + Style.BRIGHT}Please enter either 1 or 2.{Style.RESET_ALL}")
             except ValueError:
-                print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter a number (1, 2 or 3).{Style.RESET_ALL}")
+                print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter a number (1 or 2).{Style.RESET_ALL}")
 
-        rotate = False
-        if choose in [1, 2]:
+        rotate_proxy = False
+        if proxy_choice == 1:
             while True:
-                rotate = input(f"{Fore.BLUE + Style.BRIGHT}Rotate Invalid Proxy? [y/n] -> {Style.RESET_ALL}").strip()
+                rotate_proxy = input(f"{Fore.BLUE + Style.BRIGHT}Rotate Invalid Proxy? [y/n] -> {Style.RESET_ALL}").strip()
 
-                if rotate in ["y", "n"]:
-                    rotate = rotate == "y"
+                if rotate_proxy in ["y", "n"]:
+                    rotate_proxy = rotate_proxy == "y"
                     break
                 else:
                     print(f"{Fore.RED + Style.BRIGHT}Invalid input. Enter 'y' or 'n'.{Style.RESET_ALL}")
 
-        return choose, rotate
+        return proxy_choice, rotate_proxy
     
     async def check_connection(self, proxy_url=None):
         connector, proxy, proxy_auth = self.build_proxy_config(proxy_url)
@@ -207,7 +186,7 @@ class HahaWallet:
         url = f"{self.BASE_API}/users/login"
         data = json.dumps({"email":email, "password":self.password[email]})
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
         }
@@ -239,7 +218,7 @@ class HahaWallet:
             "query": "{\n  getKarmaPoints\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -274,7 +253,7 @@ class HahaWallet:
             "query": "query ($timezone: String) {\n  getDailyCheckIn(timezone: $timezone)\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -309,7 +288,7 @@ class HahaWallet:
             "query": "mutation ($timezone: String) {\n  setDailyCheckIn(timezone: $timezone)\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -342,7 +321,7 @@ class HahaWallet:
             "query": "{\n  getOnboarding {\n    show\n    expired\n    user_id\n    completed_all\n    completed_at\n    karma_available\n    karma_paid\n    karma_multiplier\n    max_transaction_perday\n    total_streaks_karma\n    redeemed_karma\n    tasks {\n      task_id\n      type\n      name\n      description\n      content\n      link\n      deeplink\n      completed\n      completed_at\n      karma_available\n      karma_paid\n      today_transactions\n      hide_after_completion\n      __typename\n    }\n    __typename\n  }\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -378,7 +357,7 @@ class HahaWallet:
             "query": "mutation ($task_id: Int) {\n  setOnboarding(task_id: $task_id) {\n    task_id\n    success\n    completed_all\n    current_karma\n    __typename\n  }\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -412,7 +391,7 @@ class HahaWallet:
             "query": "{\n  getQuests {\n    name\n    title\n    description\n    haha_wallet_created\n    swap_count\n    swap_amount\n    app_open_count\n    status\n    disabled\n    karma_cost\n    karma_multiplier\n    karma_reward\n    tasks {\n      title\n      description\n      deeplink\n      completed\n      progress\n      progress_text\n      progress_total\n      amount\n      amount_total\n      task_id\n      task_type\n      content\n      __typename\n    }\n    __typename\n  }\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -448,7 +427,7 @@ class HahaWallet:
             "query": "mutation claimQuestEx($questName: String!) {\n  claimQuestEx(questName: $questName) {\n    success\n    message\n    __typename\n  }\n}"
         })
         headers = {
-            **self.headers,
+            **self.HEADERS[email],
             "Authorization": self.id_tokens[email],
             "Content-Length": str(len(data)),
             "Content-Type": "application/json"
@@ -674,12 +653,10 @@ class HahaWallet:
                 self.log(f"{Fore.RED}No Accounts Loaded.{Style.RESET_ALL}")
                 return
 
-            use_proxy_choice, rotate_proxy = self.print_question()
+            proxy_choice, rotate_proxy = self.print_question()
 
             while True:
-                use_proxy = False
-                if use_proxy_choice in [1, 2]:
-                    use_proxy = True
+                use_proxy = True if proxy_choice == 1 else False
 
                 self.clear_terminal()
                 self.welcome()
@@ -689,7 +666,7 @@ class HahaWallet:
                 )
 
                 if use_proxy:
-                    await self.load_proxies(use_proxy_choice)
+                    await self.load_proxies()
         
                 separator = "=" * 25
                 for idx, account in enumerate(accounts, start=1):
@@ -710,6 +687,18 @@ class HahaWallet:
                                 f"{Fore.RED+Style.BRIGHT} Invalid Account Data {Style.RESET_ALL}"
                             )
                             continue
+
+                        self.HEADERS[email] = {
+                            "Accept": "application/json, text/plain, */*",
+                            "Accept-Language": "id-ID,id;q=0.9,en-US;q=0.8,en;q=0.7",
+                            "Origin": "chrome-extension://andhndehpcjpmneneealacgnmealilal",
+                            "Sec-Fetch-Dest": "empty",
+                            "Sec-Fetch-Mode": "cors",
+                            "Sec-Fetch-Site": "none",
+                            "Sec-Fetch-Storage-Access": "active",
+                            "User-Agent": FakeUserAgent().random,
+                            "X-Request-Source-Extra": "chrome"
+                        }
 
                         self.password[email] = password
                         
